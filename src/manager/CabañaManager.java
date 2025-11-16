@@ -1,70 +1,165 @@
 package manager;
 
+import db.DatabaseManager;
 import model.Cabaña;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap; 
+import java.util.HashMap;
 
 public class CabañaManager {
 
-    private List<Cabaña> cabañas;
-    private int proximoId = 1;
-
     public CabañaManager() {
-        this.cabañas = new ArrayList<>();
-        
-        //Datos de prueba
-        try {           
-            Map<Integer, Double>preciosKurmi = new HashMap<>();
-           preciosKurmi.put(2, 15000.0);
-           preciosKurmi.put(3, 18000.0);
-           preciosKurmi.put(4, 20000.0);
-           agregarCabaña(new Cabaña("Cabaña Kurmi", 4,preciosKurmi));
-           
-            Map<Integer, Double> preciosSumaq = new HashMap<>();
-            preciosSumaq.put(1, 18000.0);
-            preciosSumaq.put(2, 22000.0);
-            agregarCabaña(new Cabaña("Cabaña Sumaq", 2, preciosSumaq));
+    }
 
-            Map<Integer, Double> preciosQinti = new HashMap<>();
-            preciosQinti.put(2, 28000.0);
-            agregarCabaña(new Cabaña("Cabaña Qinti", 2, preciosQinti));
+    //carga el mapa de precios para una cabaña específica.
+    //leer la tabla Tarifa
+    private Map<Integer, Double> cargarTarifas(int cabaniaId) throws SQLException {
+        Map<Integer, Double> precios = new HashMap<>();
+        String sql = "SELECT cant_pasajeros, precio_noche FROM Tarifa WHERE cabaniaid = ?";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
             
-        } catch (Exception e) {
-            System.err.println("Error precargando cabañas: " + e.getMessage());
+            pstmt.setInt(1, cabaniaId);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    precios.put(rs.getInt("cant_pasajeros"), rs.getDouble("precio_noche"));
+                }
+            }
         }
-    }
-    
-    public void agregarCabaña(Cabaña cabaña) throws Exception {
-        if (buscarCabañaPorNumero(cabaña.getNumero()) != null) {
-            throw new Exception("Error: Ya existe una cabaña con el número/nombre: " + cabaña.getNumero());
-        }
-        cabaña.setCabañaId(proximoId++);
-        this.cabañas.add(cabaña);
-        System.out.println("Cabaña agregada: " + cabaña.getNumero());
+        return precios;
     }
 
-    public Cabaña buscarCabañaPorNumero(String numero) {
-        for (Cabaña c : this.cabañas) {
-            if (c.getNumero().equalsIgnoreCase(numero)) {
-                return c;
+    //crea un objeto Cabaña completo desde un ResultSet
+    //Carga la cabaña y también llama a cargarTarifas()
+    private Cabaña crearCabañaDesdeResultSet(ResultSet rs) throws SQLException {
+        int idCabaña = rs.getInt("cabaniaid");
+        String numero = rs.getString("numero");
+        int capacidad = rs.getInt("capacidad_maxima");
+        String estadoStr = rs.getString("estado");
+        
+        //carga el mapa de precios 
+        Map<Integer, Double> precios = cargarTarifas(idCabaña);
+
+        //crea el objeto Cabaña
+        Cabaña cabaña = new Cabaña(numero, capacidad, precios);
+        cabaña.setCabañaId(idCabaña);
+
+        //ajusta el estado 
+        if (estadoStr.equalsIgnoreCase("OCUPADA")) {
+            cabaña.marcarOcupada();
+        }
+        // (Podríamos añadir MANTENIMIENTO si lo usamos)
+
+        return cabaña;
+    }
+
+    //obtiene las cabañas de la base de datos
+    public List<Cabaña> obtenerTodasLasCabañas() {
+        List<Cabaña> cabañas = new ArrayList<>();
+        String sql = "SELECT * FROM Cabania";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                cabañas.add(crearCabañaDesdeResultSet(rs));
             }
+
+        } catch (SQLException e) {
+            System.err.println("Error al obtener todas las cabañas:");
+            e.printStackTrace();
+        }
+        return cabañas;
+    }
+
+    //obtiene las cabañas que están DISPONIBLES.
+    public List<Cabaña> obtenerCabañasDisponibles() {
+        List<Cabaña> cabañas = new ArrayList<>();
+        String sql = "SELECT * FROM Cabania WHERE estado = 'DISPONIBLE'";
+
+        try (Connection conn = DatabaseManager.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                cabañas.add(crearCabañaDesdeResultSet(rs));
+            }
+
+        } catch (SQLException e) {
+            System.err.println("Error al obtener cabañas disponibles:");
+            e.printStackTrace();
+        }
+        return cabañas;
+    }
+
+    //busca una cabaña por su ID.
+    public Cabaña buscarCabañaPorId(int id) {
+        String sql = "SELECT * FROM Cabania WHERE cabaniaid = ?";
+        
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, id);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return crearCabañaDesdeResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al buscar cabaña por ID:");
+            e.printStackTrace();
+        }
+        return null; 
+    }
+
+    //busca una cabaña por su nombre
+    public Cabaña buscarCabañaPorNumero(String numero) {
+        String sql = "SELECT * FROM Cabania WHERE numero = ?";
+        
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, numero);
+            
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return crearCabañaDesdeResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al buscar cabaña por Número:");
+            e.printStackTrace();
         }
         return null;
     }
     
-    public List<Cabaña> obtenerTodasLasCabañas() {
-        return new ArrayList<>(this.cabañas);
-    }
+
     
-    public List<Cabaña> obtenerCabañasDisponibles() {
-        List<Cabaña> disponibles = new ArrayList<>();
-        for (Cabaña c : this.cabañas) {
-            if (c.getEstado() == model.EstadoCabaña.DISPONIBLE) {
-                disponibles.add(c);
-            }
+    //actualiza el estado de una cabaña en la base de datos
+    public void actualizarEstadoCabaña(int cabaniaId, model.EstadoCabaña estado) {
+        String sql = "UPDATE Cabania SET estado = ? WHERE cabaniaid = ?";
+        
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                 
+            pstmt.setString(1, estado.toString()); // "OCUPADA" o "DISPONIBLE"
+            pstmt.setInt(2, cabaniaId);
+            
+            pstmt.executeUpdate();
+            
+        } catch (SQLException e) {
+            System.err.println("Error al actualizar estado de cabaña:");
+            e.printStackTrace();
         }
-        return disponibles;
     }
 }

@@ -2,9 +2,11 @@ package view;
 
 import manager.CabañaManager;
 import manager.ClienteManager;
-import manager.ReservaManager;
+import manager.ReservaManager; 
 import manager.ServicioExtraManager;
-import model.Reserva; 
+import manager.EstadiaManager;
+import manager.PagoManager;
+import model.Reserva;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,20 +19,25 @@ public class MainView extends JFrame {
 
     private ClienteManager clienteManager;
     private CabañaManager cabañaManager;
-    private ReservaManager reservaManager;
     private ServicioExtraManager servicioExtraManager;
+    private PagoManager pagoManager;
+    private EstadiaManager estadiaManager;
+    private ReservaManager reservaManager;
     private ReservaPanel panelReservas;
 
     public MainView() {
         this.clienteManager = new ClienteManager();
         this.cabañaManager = new CabañaManager();
-        this.reservaManager = new ReservaManager();
         this.servicioExtraManager = new ServicioExtraManager();
+        this.pagoManager = new PagoManager();
+        this.estadiaManager = new EstadiaManager(cabañaManager, pagoManager);
+        this.reservaManager = new ReservaManager(clienteManager, cabañaManager, servicioExtraManager,estadiaManager, pagoManager);
 
         setTitle("Sistema de Gestión LikeHome");
         setSize(700, 500);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
 
         //MENÚ DE SELECCIÓN
         JMenuBar menuBar = new JMenuBar();
@@ -74,11 +81,9 @@ public class MainView extends JFrame {
                 reservaManager, clienteManager, cabañaManager, servicioExtraManager
         );
 
-        EstadiaPanel panelEstadias = new EstadiaPanel(reservaManager, this);
+        EstadiaPanel panelEstadias = new EstadiaPanel(reservaManager, estadiaManager, this);
 
-        ReportePanel panelReportes = new ReportePanel(
-                reservaManager, clienteManager, cabañaManager
-        );
+        ReportePanel panelReportes = new ReportePanel(reservaManager, clienteManager, cabañaManager);
 
         panelContenedor.add(panelClientes, "Clientes");
         panelContenedor.add(panelCabañas, "Cabañas");

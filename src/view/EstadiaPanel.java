@@ -1,10 +1,10 @@
 package view;
 
 import manager.ReservaManager;
+import manager.EstadiaManager;
 import model.Estadia;
 import model.Reserva;
 import model.Pago;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -16,8 +16,8 @@ import java.util.List;
 public class EstadiaPanel extends JPanel {
 
     private ReservaManager reservaManager;
+    private EstadiaManager estadiaManager;
     private MainView mainView;
-
     private JTable tablaReservas;
     private DefaultTableModel tableModel;
     private JButton btnCheckIn;
@@ -27,19 +27,20 @@ public class EstadiaPanel extends JPanel {
     private JButton btnModificar;
     private JLabel lblMensaje;
 
-    public EstadiaPanel(ReservaManager manager, MainView mainView) {
-        this.reservaManager = manager;
+    public EstadiaPanel(ReservaManager resManager, EstadiaManager estManager, MainView mainView) {
+        this.reservaManager = resManager;
+        this.estadiaManager = estManager;
         this.mainView = mainView; 
 
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        //tabla de reservas activas ---
-        String[] columnas = {"ID Reserva", "Cliente", "Cabaña", "Nro. Pasajeros", "Fecha Inicio", "Serv. Extras", "Check-in", "Check-out"};
+        //tabla de reservas activas
+        String[] columnas = {"ID Reserva", "Cliente", "Cabaña", "Nro. Pasajeros", "Fecha Inicio", "Fecha Fin", "Serv. Extras", "Check-in", "Check-out"};
         tableModel = new DefaultTableModel(columnas, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false; // Tabla no editable
+                return false; 
             }
         };
         tablaReservas = new JTable(tableModel);
@@ -85,7 +86,7 @@ public class EstadiaPanel extends JPanel {
         tableModel.setRowCount(0); //limpiar tabla
         List<Reserva> activas = reservaManager.obtenerReservasActivas();
 
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
 
         for (Reserva r : activas) {
             Estadia est = r.getEstadia();
@@ -109,6 +110,7 @@ public class EstadiaPanel extends JPanel {
                 r.getCabaña().getNumero(),
                 r.getCantidadPasajeros(),
                 sdf.format(r.getFechaInicio()),
+                sdf.format(r.getFechaFin()),
                 serviciosStr.toString(),
                 checkInStr,
                 checkOutStr
@@ -138,16 +140,18 @@ public class EstadiaPanel extends JPanel {
             if (r.getEstadia() != null && r.getEstadia().getCheckIn() != null) {
                 throw new Exception("Error: El Check-in para esta reserva ya fue registrado.");
             }
-            Estadia nuevaEstadia = new Estadia(r);
-            nuevaEstadia.registrarCheckIn();
-            r.setEstadia(nuevaEstadia);
+            
+            //llamamos al nuevo manager
+            Estadia nuevaEstadia = estadiaManager.registrarCheckIn(r);
+            r.setEstadia(nuevaEstadia); //asocia la estadía al objeto en memoria
+            
             lblMensaje.setForeground(Color.BLUE);
             lblMensaje.setText("Check-in registrado para Reserva ID: " + r.getReservaId() +
                                ". Cabaña '" + r.getCabaña().getNumero() + "' ahora está OCUPADA.");
             actualizarTabla();
         } catch (Exception ex) {
             lblMensaje.setForeground(Color.RED);
-            lblMensaje.setText(ex.getMessage());
+            lblMensaje.setText(ex.getMessage());        
         }
     }
 
@@ -161,11 +165,11 @@ public class EstadiaPanel extends JPanel {
             if (r.getEstadia().getCheckOut() != null) {
                 throw new Exception("Error: El Check-out para esta reserva ya fue registrado.");
             }
-            r.getEstadia().registrarCheckOut();
-            Pago nuevoPago = new Pago(r);
-            nuevoPago.calcularTotal();
-            r.setPago(nuevoPago);
-            String comprobante = nuevoPago.generarComprobante();
+           
+            Pago pago = estadiaManager.registrarCheckOut(r.getEstadia());
+            r.setPago(pago);
+            
+            String comprobante = pago.generarComprobante();
             mostrarComprobante(comprobante);
             lblMensaje.setForeground(Color.BLUE);
             lblMensaje.setText("Check-out registrado para Reserva ID: " + r.getReservaId() +
@@ -173,7 +177,7 @@ public class EstadiaPanel extends JPanel {
             actualizarTabla();
         } catch (Exception ex) {
             lblMensaje.setForeground(Color.RED);
-            lblMensaje.setText(ex.getMessage());
+            lblMensaje.setText(ex.getMessage());   
         }
     }
 

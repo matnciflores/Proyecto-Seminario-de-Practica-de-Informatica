@@ -2,11 +2,11 @@ package model;
 
 import java.util.Date;
 
-public class Estadia {
 
+public class Estadia {
+    
     private Date checkIn;
     private Date checkOut;
-    
     private Reserva reserva; 
 
     public Estadia(Reserva reserva) {
@@ -14,23 +14,33 @@ public class Estadia {
     }
 
     public void registrarCheckIn() {
-        this.checkIn = new Date(); //fecha/hora actual
+        this.checkIn = new Date(); //asigna la fecha/hora actual
         this.reserva.getCabaña().marcarOcupada();
     }
 
-    //registra la fecha y hora actual como check-out
- 
     public void registrarCheckOut() {
-        this.checkOut = new Date(); //asigna la fecha/hora actual
+        this.checkOut = new Date(); 
         this.reserva.getCabaña().marcarDisponible();
         this.reserva.finalizarReserva();
     }
 
     public Date getCheckIn() {
-        return checkIn;
+        return checkIn; 
     }
-
-    public Date getCheckOut() {
-        return checkOut;
+    
+    public void setCheckIn(Date checkIn) { 
+        this.checkIn = checkIn; 
+    }
+    
+    public Date getCheckOut() { 
+        return checkOut; 
+    }
+    
+    public void setCheckOut(Date checkOut) { 
+        this.checkOut = checkOut; 
+    }
+    
+    public Reserva getReserva() { 
+        return reserva; 
     }
 }

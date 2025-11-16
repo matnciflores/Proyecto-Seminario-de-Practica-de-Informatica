@@ -17,7 +17,7 @@ public class Cliente {
         this.email = email;
     }
 
-    // Métodos Getters y Setters
+    //metodos Getters y Setters
     public int getClienteId() {
         return clienteId;
     }

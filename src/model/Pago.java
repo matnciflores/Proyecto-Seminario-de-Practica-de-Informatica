@@ -76,6 +76,13 @@ public class Pago {
         }
         return montoTotal;
     }
+    
+    public void setMontoTotal(double montoTotal) {
+        this.montoTotal = montoTotal;
+    }
+    public void setFecha(Date fecha) {
+        this.fecha = fecha;
+    }
 
     public Date getFecha() {
         return fecha;

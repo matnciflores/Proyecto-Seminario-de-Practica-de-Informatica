@@ -17,7 +17,6 @@ public class Reserva {
     private Estadia estadia;
     private Pago pago;
     
-    // --- ATRIBUTOS NUEVOS ---
     private int cantidadPasajeros;
     private double precioFinalPorNoche; 
 
@@ -99,4 +98,7 @@ public class Reserva {
         return pago; }
     public void setPago(Pago pago) {
         this.pago = pago; }
+    public void setEstado(EstadoReserva estado) {
+    this.estado = estado;
+    }
 }

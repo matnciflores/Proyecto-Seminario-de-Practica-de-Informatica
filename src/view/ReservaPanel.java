@@ -39,7 +39,7 @@ public class ReservaPanel extends JPanel {
     private List<JCheckBox> checkServicios;
     private int idReservaEditando = 0;
     //formateador de fechas
-    private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+    private final SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
 
     public ReservaPanel(ReservaManager resManager, ClienteManager cliManager, CabañaManager cabManager, ServicioExtraManager servManager) {
         this.reservaManager = resManager;
@@ -75,9 +75,9 @@ public class ReservaPanel extends JPanel {
         panelFormulario.add(comboCabañas);
         panelFormulario.add(new JLabel("Cantidad de Pasajeros:"));
         panelFormulario.add(spinnerPasajeros);
-        panelFormulario.add(new JLabel("Fecha Inicio (yyyy-MM-dd):"));
+        panelFormulario.add(new JLabel("Fecha Inicio (dd-MM-yyyy):"));
         panelFormulario.add(txtFechaInicio);
-        panelFormulario.add(new JLabel("Fecha Fin (yyyy-MM-dd):"));
+        panelFormulario.add(new JLabel("Fecha Fin (dd-MM-yyyy):"));
         panelFormulario.add(txtFechaFin);
         
         panelFormulario.add(new JLabel("Servicios Extras:"));
